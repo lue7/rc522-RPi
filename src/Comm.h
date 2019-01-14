@@ -55,9 +55,16 @@ public:
 };
 
 // UART driver
+#include <termios.h>
 class CommUART : public Comm {
 protected :
-    // NOT yet supported
+    int fd;
+    char _portName[13] = "/dev/ttyAMA0"; // RPi uart 
+    struct termios _termios;		 // backup 
+    speed_t _portSpeed = B115200;	 // speed 115200 bps	
+    int timeout = 350;			 // rx timeout 350 ms
+    void rcvBytes( byte count,
+                   byte *values);
 public:
     CommUART();
     void initComm();
@@ -68,5 +75,6 @@ public:
                    byte count,
                    byte *values,
                    byte rxAlign=0);
+   ~CommUART();
 };
 #endif
