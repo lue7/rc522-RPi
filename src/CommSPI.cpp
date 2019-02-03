@@ -22,21 +22,17 @@ void CommSPI::initComm() {
         perror("dpi init : open spidev");
         return;
     }
-    if (ioctl(fd, SPI_IOC_WR_MODE, &mode)<0)   {
+    if (ioctl(fd, SPI_IOC_WR_MODE, &mode)<0)  
         perror("can't set spi mode");
-        return;
-    }
+    
     if (ioctl(fd, SPI_IOC_WR_BITS_PER_WORD, &bits)<0)
-    {
         perror("can't set bits per word");
-        return;
-    }
+    
     if (ioctl(fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed)<0)
-    {
         perror("can't set max speed hz");
-        return;
-    }
+    
     close(fd);
+    return;
 }
 // write count bytes from values
 void CommSPI::writeBytes(   byte reg, 
@@ -44,15 +40,16 @@ void CommSPI::writeBytes(   byte reg,
                             byte *values	) {
     byte *buf;
     int fd,status;
-    struct spi_ioc_transfer xfer[2] = {0};
+    struct spi_ioc_transfer xfer[2];
 
+    bzero(xfer,sizeof xfer);
     fd=open(_chipSelectDev,O_RDWR);
     if (fd<0) {
         perror("write values : open spidev");
         return;
     }
     buf=(byte*)malloc(count+1);
-    buf[0] = reg;
+    buf[0] = reg << 1;
     memcpy(buf+1,values,count);
     xfer[0].tx_buf = (unsigned long)buf;
     xfer[0].len = count+1; /* Length of  command to write*/
@@ -60,17 +57,15 @@ void CommSPI::writeBytes(   byte reg,
     xfer[0].bits_per_word = spi_bpw;
     status = ioctl(fd, SPI_IOC_MESSAGE(1), xfer);
     if (status < 0)
-    {
-        perror("write values : SPI_IOC_MESSAGE");
-        return;
-    }
-    /*
+        perror("write values : SPI_IOC_MESSAGE");    
+/*
         printf("values buf");
         for (int i=0;i<count;i++) printf(" %x %x",values[i],buf[i+1]);
         printf(" len %d\n",count);
 */   
     close(fd);
     free(buf);
+    return;
 }
 // read count bytes into values
 void CommSPI::readBytes(   byte reg,	
@@ -80,14 +75,15 @@ void CommSPI::readBytes(   byte reg,
     byte buf[2]={0};
     int i,fd,status;
     byte value0 = values[0];
-    struct spi_ioc_transfer xfer[2] = {0};
+    struct spi_ioc_transfer xfer[2];
 
+    bzero(xfer,sizeof xfer);
     fd=open(_chipSelectDev,O_RDWR);
     if (fd<0) {
         perror("read values : open spidev");
         return;
     }
-    buf[0]= 0x80 | reg;
+    buf[0]= 0x80 | (reg << 1);
     xfer[0].tx_buf = (unsigned long)buf;
     xfer[0].len = 2; /* Length of  command to write*/
     xfer[0].speed_hz = spi_speed;
@@ -103,7 +99,7 @@ void CommSPI::readBytes(   byte reg,
             return;
         }
         values[i] = buf[1];
-        buf[0]= 0x80 | reg;
+        buf[0]= 0x80 | (reg << 1);
         buf[1]=0;
     }
     
@@ -114,9 +110,12 @@ void CommSPI::readBytes(   byte reg,
         values[0] = (value0 & ~mask) | (values[0] & mask);
     }
     close(fd);
-    // printf("read: %02x\n", buf[0]);
-    // printf("values");
-    // for (i=0;i<count;i++) printf(" %x",values[i]);
-    //     printf(" len %d\n",count);
+/*
+    printf("read: %02x\n", buf[0]);
+    printf("values");
+    for (i=0;i<count;i++) printf(" %x",values[i]);
+        printf(" len %d\n",count);
+*/
+    return;
 }
 

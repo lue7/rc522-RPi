@@ -21,28 +21,46 @@
  */
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
 #include <MFRC522.h>
 
-MFRC522 mfrc522;  // Create MFRC522 instance
-
+void usage() {
+	printf("usage : Dumpinfo [-spi |-uart|-i2c]\n");
+}
 int main(int argc,char *argv[]) {
-	
-	mfrc522.PCD_Init();		// Init MFRC522
-	mfrc522.PCD_DumpVersionToSerial();	// Show details of PCD - MFRC522 Card Reader details
+
+	MFRC522 *mfrc522;
+
+  	if (argc>1) {
+		if (!strcmp(argv[1],"-spi"))
+			mfrc522 = new MFRC522(MFRC522::SPI);
+		else if (!strcmp(argv[1],"-uart"))
+			mfrc522 = new MFRC522(MFRC522::UART);
+		else if(!strcmp(argv[1],"-i2c"))
+			mfrc522 = new MFRC522(MFRC522::I2C);
+        	else {
+			usage();
+			return -1;
+		}
+  	}
+  	else
+		mfrc522 = new MFRC522(MFRC522::SPI);
+
+	mfrc522->PCD_Init();		// Init MFRC522
+	mfrc522->PCD_DumpVersionToSerial();	// Show details of PCD - MFRC522 Card Reader details
 	printf("\nScan PICC to see UID, SAK, type, and data blocks...\n");
 
         while(1) {
 	usleep(1000);
 	// Look for new cards
-	if ( ! mfrc522.PICC_IsNewCardPresent()) {
+	if ( ! mfrc522->PICC_IsNewCardPresent()) {
 		continue;
 	}
-	
 	// Select one of the cards
-	if ( ! mfrc522.PICC_ReadCardSerial()) {
+	if ( ! mfrc522->PICC_ReadCardSerial()) {
 		continue;
 	}
 	// Dump debug info about the card; PICC_HaltA() is automatically called
-	mfrc522.PICC_DumpToSerial(&(mfrc522.uid));
+	mfrc522->PICC_DumpToSerial(&(mfrc522->uid));
         }
 }

@@ -19,34 +19,32 @@ void CommI2C::initComm() {
         perror("i2c init : open i2c dev");
         return;
     }
-    if (ioctl(fd, I2C_SLAVE, addr) < 0) {
+    if (ioctl(fd, I2C_SLAVE, addr) < 0) 
         perror("i2c init : i2c dev addr");
-        return;
-    }
-
+    
+    return;
 }
 // write count bytes from values
 void CommI2C::writeBytes(   byte reg, 
                             byte count,
                             byte *values	) {
     byte *buf;
-    size_t len = count+1;
+    ssize_t len = count+1;
 
     buf=(byte*)malloc(len);
     buf[0] = reg;
     memcpy(buf+1,values,count);
 
-    if (write(fd,buf,len) != len) {
+    if (write(fd,buf,len) != len)
         perror("write values : i2c transaction error");
-        return;
-    }
-    /*
-        printf("values buf");
+   /* 
+        printf("write reg %x values buf",reg);
         for (int i=0;i<count;i++) printf(" %x %x",values[i],buf[i+1]);
         printf(" len %d\n",count);
-*/   
+   */
 
     free(buf);
+    return;
 }
 // read count bytes into values
 void CommI2C::readBytes(   byte reg,	
@@ -56,32 +54,25 @@ void CommI2C::readBytes(   byte reg,
     byte value0 = values[0];
     
     values[0]= reg;
-    if (read(fd,values,count)!=count) {
-        perror("read values : i2c transaction error");
+    if (write(fd,values,1) != 1) {
+        perror("read write access  : i2c transaction error");
         return;
     }
-    /*
-    for (i=0;i<count;i++) {
-        if (read(fd,values+i,1)!=1) {
-            perror("read values : i2c transaction error");
-            return;
-        }
-        values[i] = buf[1];
-        buf[0]= 0x80 | reg;
-        buf[1]=0;
-    }
-*/    
+    if (read(fd,values,count)!=count)
+        perror("read values : i2c transaction error");
+    
     if (rxAlign) {	// Only update bit positions rxAlign..7 in values[0]
         // Create bit mask for bit positions rxAlign..7
         byte mask = (0xFF << rxAlign) & 0xFF;
         // Apply mask to both current value of values[0] and the new data in value.
         values[0] = (value0 & ~mask) | (values[0] & mask);
     }
-    
-    // printf("read: %02x\n", buf[0]);
-    // printf("values");
-    // for (i=0;i<count;i++) printf(" %x",values[i]);
-    //     printf(" len %d\n",count);
+   /* 
+    printf("read reg %02x values ", reg);
+    for (int i=0;i<count;i++) printf(" %x",values[i]);
+         printf(" len %d\n",count);
+   */
+   return;
 }
 CommI2C::~CommI2C() {
     close(fd);

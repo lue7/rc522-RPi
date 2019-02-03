@@ -10,7 +10,7 @@
 #include <errno.h>
 
 // Claim uart interface using the c_iflag
-#  define CCLAIMED 0x80000000
+#define CCLAIMED 0x80000000
 #ifndef MIN
 #define MIN(a,b) (((a) < (b)) ? (a) : (b))
 #endif
@@ -26,6 +26,7 @@ void CommUART::initComm() {
         return;
     }
 
+    // Save termios to restore it later
     if (tcgetattr(fd, &_termios) == -1) {
         perror("can not get tty values");
         close(fd);
@@ -37,7 +38,7 @@ void CommUART::initComm() {
         close(fd);
         return;
     }
-    // Save termios to restore it laters
+    // Initialize with current
     termios =_termios;
 
     termios.c_cflag = CS8 | CLOCAL | CREAD;
@@ -62,11 +63,11 @@ void CommUART::initComm() {
 void CommUART::writeBytes(   byte reg, 
                              byte count,
                              byte *values	) {
-    byte * buf,res;
-
+    byte * buf,res[1]={0};
+printf("WRITE %i bytes\n",count);
     buf=(byte*)malloc(count+1);
-    buf[0] = reg;
-    if (count>0) memcpy(buf+1,values,count);
+    buf[0] = reg & 0x7F;
+    if (count>0) memcpy(&buf[1],values,count);
     count++;
     if (count != write(fd, values, count))
     {
@@ -74,10 +75,11 @@ void CommUART::writeBytes(   byte reg,
     }
     else
     {
-        rcvBytes(1,&res);
-        if (res!=reg)
+        rcvBytes(1,res);
+        if (res[0]!=reg)
         {
             perror("write values address : UART_IOC_MESSAGE");
+	    printf("res %x reg %x\n",res[0],reg);
         }
     }
     free(buf);
@@ -88,7 +90,8 @@ void CommUART::readBytes(   byte reg,
                             byte *values,
                             byte rxAlign) {
     byte value0 = values[0];
-
+printf("READ %i bytes\n",count);
+    reg = reg | 0x80;
     if (1 != write(fd, &reg, 1))
     {
         perror("read values address : UART_IOC_MESSAGE");
@@ -101,6 +104,7 @@ void CommUART::readBytes(   byte reg,
         // Apply mask to both current value of values[0] and the new data in value.
         values[0] = (value0 & ~mask) | (values[0] & mask);
     }
+    return;
 }
 
 void CommUART::rcvBytes(    byte count,
@@ -144,8 +148,9 @@ void CommUART::rcvBytes(    byte count,
             perror("receive values number : UART_IOC_MESSAGE");
             return;
         }
+	printf("bytes available %i\n",nbB);
         // Read data received
-        res = read(fd, values + nbRcv, MIN(nbB, (count - nbRcv)));
+        res = read(fd, &values[nbRcv], MIN(nbB, (count - nbRcv)));
         if (res <= 0) {
             perror("receive values read : UART_IOC_MESSAGE");
             return;
