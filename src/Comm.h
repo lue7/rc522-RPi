@@ -61,7 +61,7 @@ protected :
     int fd;
     char _portName[13] = "/dev/ttyAMA0"; // RPi uart 
     struct termios _termios;		 // backup 
-    speed_t _portSpeed = B115200;	 // speed 115200 bps	
+    speed_t _portSpeed = B9600;	 	 // speed 9600 bps	
     int timeout = 350;			 // rx timeout 350 ms
     void rcvBytes( byte count,
                    byte *values);

@@ -1,6 +1,6 @@
 # rc522-RPi
 C++ library to use RC522 RFID module with a Rapsberry-pi.
-The three interfaces SPI/I2C/UART are intented to be supported **SPI and I2C work / UART is under development nowadays**
+The three interfaces SPI/I2C/UART are supported
 
 # Enabling SPI/I2C/UART
 SPI driver uses /dev/spidev0.0

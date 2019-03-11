@@ -58,31 +58,40 @@ void CommUART::initComm() {
         close(fd);
         return;
     }
+
+    tcflush(fd,TCIOFLUSH);
+
     return;
 }
 void CommUART::writeBytes(   byte reg, 
                              byte count,
                              byte *values	) {
-    byte * buf,res[1]={0};
-printf("WRITE %i bytes\n",count);
-    buf=(byte*)malloc(count+1);
+    byte buf[1],res[1]={0};
+
     buf[0] = reg & 0x7F;
-    if (count>0) memcpy(&buf[1],values,count);
-    count++;
-    if (count != write(fd, values, count))
+    while(count-->0)
     {
-        perror("write values : UART_IOC_MESSAGE");
+	if (1 != write(fd, buf, 1))
+    	{
+        	perror("write adress : UART_IOC_MESSAGE");
+    	}
+    	else
+    	{
+        	rcvBytes(1,res);
+        	if (res[0]!=reg)
+        	{
+            		perror("write reg value : UART_IOC_MESSAGE");
+        	}
+		else
+		{
+			if (1 != write(fd, values++, 1))
+    			{
+        			perror("write data : UART_IOC_MESSAGE");
+    			}
+		}
+    	}
     }
-    else
-    {
-        rcvBytes(1,res);
-        if (res[0]!=reg)
-        {
-            perror("write values address : UART_IOC_MESSAGE");
-	    printf("res %x reg %x\n",res[0],reg);
-        }
-    }
-    free(buf);
+
     return;
 }
 void CommUART::readBytes(   byte reg,
@@ -90,13 +99,15 @@ void CommUART::readBytes(   byte reg,
                             byte *values,
                             byte rxAlign) {
     byte value0 = values[0];
-printf("READ %i bytes\n",count);
+
     reg = reg | 0x80;
-    if (1 != write(fd, &reg, 1))
-    {
-        perror("read values address : UART_IOC_MESSAGE");
+    while (count--) {
+    	if (1 != write(fd, &reg, 1))
+    	{
+        	perror("read values address : UART_IOC_MESSAGE");
+    	}
+    	rcvBytes(1,values++);
     }
-    rcvBytes(count,values);
 
     if (rxAlign) {	// Only update bit positions rxAlign..7 in values[0]
         // Create bit mask for bit positions rxAlign..7
@@ -148,7 +159,7 @@ void CommUART::rcvBytes(    byte count,
             perror("receive values number : UART_IOC_MESSAGE");
             return;
         }
-	printf("bytes available %i\n",nbB);
+	
         // Read data received
         res = read(fd, &values[nbRcv], MIN(nbB, (count - nbRcv)));
         if (res <= 0) {

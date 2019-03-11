@@ -351,12 +351,12 @@ bool MFRC522::PCD_PerformSelfTest() {
         return false; // abort test
     }
 
-    // Verify that the results match up to our expectations
-    /***TODO	for (uint8_t i = 0; i < 64; i++) {
-                if (result[i] != pgm_read_byte(&(reference[i]))) {
-                        return false;
-                }
-        }*/
+    // Verify that the results match up to our expectations	
+    for (uint8_t i = 0; i < 64; i++) {
+         if (result[i] != reference[i]) {
+             return false;
+         }
+     }
 
     // Test passed; all is good.
     return true;
